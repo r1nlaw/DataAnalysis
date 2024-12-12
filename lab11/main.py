@@ -1,45 +1,69 @@
-from collections import defaultdict
 import random
-from nltk.tokenize import word_tokenize
+import re
 import nltk
 
-nltk.download("punkt_tab")
+nltk.download("punkt")
 
+def generate_text_with_regex(text: str, n: int = 3) -> str:
+    # Токенизация текста
+    words = nltk.word_tokenize(text)
 
-def ngram(text: str, n: int = 3) -> str:
-    """
-    Function for calculation ngram
-    """
-    words = word_tokenize(text)
-    ngrams = zip(*[words[i:] for i in range(n)])
-    trans = defaultdict(list)
-    init = []
-    for i in ngrams:
-        if i[0] == ".":
-            init.append(i[1 : n - 1])
-        trans[i[0 : n - 1]].append(i[-1])
-    result = random.choice(init)
-    fr = ["."]
-    res_true = [result[0]]
+    # Словарь для хранения переходов между (n-1)-граммами
+    transitions = {}
+
+    # Генерация (n-1)-грамм
+    for i in range(len(words) - n + 1):
+        context = tuple(words[i:i + n - 1])  # (n-1)-грамма
+        next_word = words[i + n - 1]  # Следующее слово
+
+        # Добавляем переходы для контекста в словарь
+        if context not in transitions:
+            transitions[context] = []
+        transitions[context].append(next_word)
+
+    # Проверка на пустоту словаря transitions
+    if not transitions:
+        return "Ошибка: В тексте недостаточно данных для генерации текста."
+
+    # Генерация текста
+    # Сначала выбираем случайный контекст
+    start_word = random.choice(list(transitions.keys()))
+    
+    # Перепроверяем, чтобы контекст не начинался с знаков препинания
+    while start_word[0] in ['.', '!', '?', ',', ';', ':']:
+        start_word = random.choice(list(transitions.keys()))
+    
+    result = list(start_word)
+
     while True:
-        candidates = trans[tuple(fr + list(result))]
-        next_word = random.choice(candidates)
-        fr = [result[0]]
-        result = list(result[1:]) + [next_word]
-        res_true.append(result[0])
-        if result[0] == ".":
-            return " ".join(res_true)
+        # Получаем контекст из последних n-1 слов
+        context = tuple(result[-(n - 1):])
 
+        # Строим регулярное выражение для поиска продолжений
+        context_str = " ".join(context)
+        pattern = r"\b" + re.escape(context_str) + r"\s+(\w+)"  # Ищем следующее слово после контекста
+
+        # Находим все продолжения для текущего контекста в исходном тексте
+        matches = re.findall(pattern, text)
+
+        if matches:
+            next_word = random.choice(matches)  # Выбираем случайное продолжение
+            result.append(next_word)
+        else:
+            break  # Если нет продолжений, завершаем генерацию
+
+        # Завершаем, если выбрана точка или конец предложения
+        if next_word in ['.', '!', '?']:
+            break
+
+    # Объединяем результат в строку
+    return ' '.join(result)
 
 def main() -> None:
-    """
-    main function
-    """
-    with open("data.txt", "r+", encoding="UTF8") as f:
+    with open("text.txt", "r+", encoding="UTF8") as f:
         text = f.read()
-        print(f"Trigram {ngram(text, 3)}")
-        print(f"Fourgram {ngram(text, 4)}")
-
+        print(f"Генерация текста (Trigram): {generate_text_with_regex(text, 3)}")
+        print(f"Генерация текста (Fourgram): {generate_text_with_regex(text, 4)}")
 
 if __name__ == "__main__":
     main()
