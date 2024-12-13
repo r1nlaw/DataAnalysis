@@ -4,9 +4,12 @@ import nltk
 
 nltk.download("punkt")
 
-def generate_text_with_regex(text: str, n: int = 3) -> str:
+def generate_text_with_regex(text: str, n: int = 3, max_retries: int = 100) -> str:
     # Токенизация текста
     words = nltk.word_tokenize(text)
+
+    # Фильтруем токены, чтобы убрать знаки препинания
+    words = [word for word in words if word.isalpha()]  # Оставляем только слова
 
     # Словарь для хранения переходов между (n-1)-граммами
     transitions = {}
@@ -29,10 +32,6 @@ def generate_text_with_regex(text: str, n: int = 3) -> str:
     # Сначала выбираем случайный контекст
     start_word = random.choice(list(transitions.keys()))
     
-    # Перепроверяем, чтобы контекст не начинался с знаков препинания
-    while start_word[0] in ['.', '!', '?', ',', ';', ':']:
-        start_word = random.choice(list(transitions.keys()))
-    
     result = list(start_word)
 
     while True:
@@ -48,11 +47,20 @@ def generate_text_with_regex(text: str, n: int = 3) -> str:
 
         if matches:
             next_word = random.choice(matches)  # Выбираем случайное продолжение
+
+            # Игнорируем знаки препинания, если они попадают в следующую выборку
+            while next_word in ['.', '!', '?', ',', ';', ':']:
+                # Ищем следующее слово, которое не является знаком препинания
+                matches = re.findall(pattern, text)
+                if matches:
+                    next_word = random.choice(matches)
+                else:
+                    break
             result.append(next_word)
         else:
             break  # Если нет продолжений, завершаем генерацию
 
-        # Завершаем, если выбрана точка или конец предложения
+        # Проверка, если сгенерированное слово является знаком препинания — завершаем
         if next_word in ['.', '!', '?']:
             break
 
