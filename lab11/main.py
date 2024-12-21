@@ -33,7 +33,7 @@ def generate_text_with_regex(text: str, n: int = 3, max_retries: int = 100) -> s
     start_word = random.choice(list(transitions.keys()))
     
     result = list(start_word)
-
+    
     while True:
         # Получаем контекст из последних n-1 слов
         context = tuple(result[-(n - 1):])
@@ -72,6 +72,8 @@ def main() -> None:
         text = f.read()
         print(f"Генерация текста (Trigram): {generate_text_with_regex(text, 3)}")
         print(f"Генерация текста (Fourgram): {generate_text_with_regex(text, 4)}")
+
+      
 
 if __name__ == "__main__":
     main()
